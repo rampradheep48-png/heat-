@@ -25,7 +25,7 @@
  * `fetchFortyGuardHeatmap()` just consumes `{ tempNow, trend }`.
  *
  * If anything here doesn't match reality, this module throws, and the app
- * automatically falls back to Open-Meteo (see hooks/useZoneData.js) — so a
+ * automatically falls back to Open-Meteo (see hooks/useHeatData.js) — so a
  * wrong guess degrades gracefully instead of breaking the demo.
  */
 

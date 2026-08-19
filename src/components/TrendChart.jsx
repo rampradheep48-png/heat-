@@ -11,7 +11,9 @@ import {
 import { mergeTrends } from '../utils/mergeTrends.js';
 import { formatHour } from '../utils/format.js';
 
-const LINE_COLORS = ['#7CF5C4', '#F4C744'];
+// One distinct hue per district, readable against the dark panel.
+const LINE_COLORS = ['#7CF5C4', '#F4C744', '#5AA9FF', '#FF9F1C', '#C792EA'];
+const DASH_PATTERNS = [undefined, '5 4', undefined, '2 3', '8 3'];
 
 export default function TrendChart({ zoneStates }) {
   const data = mergeTrends(zoneStates);
@@ -25,6 +27,7 @@ export default function TrendChart({ zoneStates }) {
             Trend
           </div>
           <h3 className="font-display text-base font-semibold text-ink">24-hour temperature</h3>
+          <div className="text-xs text-ink-faint">All {zoneStates.length} districts</div>
         </div>
       </div>
 
@@ -49,7 +52,7 @@ export default function TrendChart({ zoneStates }) {
               />
               <Tooltip
                 labelFormatter={formatHour}
-                formatter={(value) => [`${Number(value).toFixed(1)}°C`]}
+                formatter={(value, name) => [`${Number(value).toFixed(1)}°C`, name]}
                 contentStyle={{
                   background: '#111A15',
                   border: '1px solid #233028',
@@ -61,9 +64,7 @@ export default function TrendChart({ zoneStates }) {
               />
               <Legend
                 formatter={(value) => (
-                  <span className="font-body text-xs text-ink-muted">
-                    {zoneStates.find((z) => z.zone.id === value)?.zone.shortName ?? value}
-                  </span>
+                  <span className="font-body text-xs text-ink-muted">{value}</span>
                 )}
               />
               {zoneStates.map((z, i) => (
@@ -71,9 +72,10 @@ export default function TrendChart({ zoneStates }) {
                   key={z.zone.id}
                   type="monotone"
                   dataKey={z.zone.id}
+                  name={z.zone.shortName}
                   stroke={LINE_COLORS[i % LINE_COLORS.length]}
                   strokeWidth={2}
-                  strokeDasharray={i === 1 ? '5 4' : undefined}
+                  strokeDasharray={DASH_PATTERNS[i % DASH_PATTERNS.length]}
                   dot={false}
                   connectNulls
                   isAnimationActive={false}

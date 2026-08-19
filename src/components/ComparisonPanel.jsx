@@ -1,12 +1,12 @@
-import { POPULATION_RATIO } from '../data/zones.js';
+import { POPULATION_RATIO, MOST_EXPOSED, LEAST_EXPOSED } from '../data/zones.js';
 import { formatPopulation, formatTemp } from '../utils/format.js';
 
 function PopulationBar({ zone, tempNow, risk, maxPopulation }) {
-  const widthPct = Math.max(4, (zone.population / maxPopulation) * 100);
+  const widthPct = Math.max(2, (zone.population / maxPopulation) * 100);
 
   return (
     <div>
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between gap-3">
         <div>
           <div className="font-display text-lg font-semibold text-ink">{zone.name}</div>
           <div className="text-xs text-ink-faint">{zone.densityLabel}</div>
@@ -15,7 +15,9 @@ function PopulationBar({ zone, tempNow, risk, maxPopulation }) {
           <div className="font-mono text-2xl font-semibold text-ink">
             {formatPopulation(zone.population)}
           </div>
-          <div className="text-xs text-ink-faint">2011 census · {zone.kind.toLowerCase()} proper</div>
+          <div className="text-xs text-ink-faint">
+            {zone.populationYear} census · {zone.kind.toLowerCase()} proper
+          </div>
         </div>
       </div>
 
@@ -30,10 +32,7 @@ function PopulationBar({ zone, tempNow, risk, maxPopulation }) {
       </div>
 
       <div className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: risk.color }}
-        />
+        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: risk.color }} />
         Reading now: <span className="font-mono text-ink">{formatTemp(tempNow)}C</span>
         <span className="text-ink-faint">· {risk.label}</span>
       </div>
@@ -43,6 +42,8 @@ function PopulationBar({ zone, tempNow, risk, maxPopulation }) {
 
 export default function ComparisonPanel({ zoneStates }) {
   const maxPopulation = Math.max(...zoneStates.map((z) => z.zone.population));
+  // Largest exposed population first — that's the ranking the argument rests on.
+  const ranked = [...zoneStates].sort((a, b) => b.zone.population - a.zone.population);
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-void-line bg-void-panel p-6 shadow-panel sm:p-8">
@@ -57,20 +58,21 @@ export default function ComparisonPanel({ zoneStates }) {
 
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-faint">
-          Same climate belt · Same April&ndash;May 2026 heatwave event
+          Five Tamil Nadu districts · Same April&ndash;May 2026 heatwave season
         </div>
         <div className="flex items-center gap-2 rounded-full border border-risk-extreme/30 bg-risk-extreme/10 px-3 py-1 font-display text-sm font-semibold text-risk-extreme">
-          ~{POPULATION_RATIO}× the exposed population
+          {MOST_EXPOSED.shortName} carries ~{POPULATION_RATIO}× {LEAST_EXPOSED.shortName}&rsquo;s
+          exposed population
         </div>
       </div>
 
-      <h2 className="relative mt-3 max-w-2xl font-display text-xl font-semibold text-ink sm:text-2xl">
-        Both places hit 40°C+ this heatwave. Population — not temperature — is what turns that
-        into a mass-casualty risk.
+      <h2 className="relative mt-3 max-w-3xl font-display text-xl font-semibold text-ink sm:text-2xl">
+        These districts all hit 40°C+ in a heatwave. Population — not temperature — is what turns
+        that into a mass-casualty risk.
       </h2>
 
-      <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10">
-        {zoneStates.map(({ zone, tempNow, risk }) => (
+      <div className="relative mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-10 lg:grid-cols-3">
+        {ranked.map(({ zone, tempNow, risk }) => (
           <PopulationBar
             key={zone.id}
             zone={zone}

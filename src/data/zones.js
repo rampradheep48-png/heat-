@@ -1,10 +1,18 @@
 import { buildPolygonAOI } from '../utils/geo.js';
 
 /**
- * The two core comparison zones. Same hot interior Tamil Nadu climate belt,
- * same April/May 2026 heatwave events — population is the deliberate variable.
+ * The five districts the dashboard tracks. Each has a headquarters point plus
+ * its taluk-headquarter sub-towns, so the map and the readings board show heat
+ * variation *within* a district, not just between districts.
+ *
+ * Chennai has no taluk sub-towns in the traditional sense (single dense urban
+ * corporation), so it is split by zone/area instead — flagged via `subKind`.
+ *
+ * `usesFortyGuard` marks the two zones we spend FortyGuard credits on. The
+ * other three read from Open-Meteo, which keeps the hackathon quota intact
+ * while still covering every district live.
  */
-export const ZONES = [
+export const DISTRICTS = [
   {
     id: 'trichy',
     name: 'Tiruchirappalli',
@@ -17,40 +25,7 @@ export const ZONES = [
     densityLabel: 'High-density city',
     context:
       'A major interior Tamil Nadu city with dense wards, informal settlements, and a large outdoor-labour workforce.',
-    polygon: buildPolygonAOI(10.8155, 78.6965),
-  },
-  {
-    id: 'tirupattur',
-    name: 'Tirupattur',
-    shortName: 'Tirupattur',
-    kind: 'Town',
-    lat: 12.4927,
-    lon: 78.5681,
-    population: 83612,
-    populationYear: 2011,
-    densityLabel: 'Low-density town',
-    context:
-      'A smaller town in the same interior heat belt, with roughly a tenth of Trichy’s population exposed to comparable peak temperatures.',
-    polygon: buildPolygonAOI(12.4927, 78.5681),
-  },
-];
-
-/**
- * The full district network rendered on the map. Each district has a
- * headquarters point plus its taluk-headquarter sub-towns, so the map shows
- * heat variation *within* a district, not just between districts.
- *
- * Chennai has no taluk sub-towns in the traditional sense (single dense urban
- * corporation), so it is split by zone/area instead — flagged via `subKind`.
- */
-export const DISTRICTS = [
-  {
-    id: 'trichy',
-    name: 'Tiruchirappalli',
-    shortName: 'Trichy',
-    lat: 10.8155,
-    lon: 78.6965,
-    population: 847387,
+    usesFortyGuard: true,
     subKind: 'Taluk HQ',
     towns: [
       { id: 'thuraiyur', name: 'Thuraiyur', lat: 11.1333, lon: 78.6 },
@@ -66,9 +41,15 @@ export const DISTRICTS = [
     id: 'tirupattur',
     name: 'Tirupattur',
     shortName: 'Tirupattur',
+    kind: 'Town',
     lat: 12.4927,
     lon: 78.5681,
     population: 83612,
+    populationYear: 2011,
+    densityLabel: 'Low-density town',
+    context:
+      'A smaller town in the same interior heat belt, with roughly a tenth of Trichy’s population exposed to comparable peak temperatures.',
+    usesFortyGuard: true,
     subKind: 'Taluk HQ',
     towns: [
       { id: 'ambur', name: 'Ambur', lat: 12.79, lon: 78.7167 },
@@ -79,9 +60,15 @@ export const DISTRICTS = [
     id: 'vellore',
     name: 'Vellore',
     shortName: 'Vellore',
+    kind: 'City',
     lat: 12.9165,
     lon: 79.1325,
     population: 185803,
+    populationYear: 2011,
+    densityLabel: 'Mid-density city',
+    context:
+      'A northern Tamil Nadu district centre ringed by leather-tanning and weaving towns, with a large informal outdoor workforce.',
+    usesFortyGuard: false,
     subKind: 'Taluk HQ',
     towns: [
       { id: 'gudiyatham', name: 'Gudiyatham', lat: 12.945, lon: 78.87 },
@@ -95,9 +82,15 @@ export const DISTRICTS = [
     id: 'chennai',
     name: 'Chennai',
     shortName: 'Chennai',
+    kind: 'Metro',
     lat: 13.0827,
     lon: 80.2707,
     population: 4646732,
+    populationYear: 2011,
+    densityLabel: 'Dense coastal metro',
+    context:
+      'Tamil Nadu’s capital and by far its largest heat-exposed population — a coastal metro where high humidity pushes apparent temperature well above the dry-bulb reading.',
+    usesFortyGuard: false,
     subKind: 'City zone',
     towns: [
       { id: 't-nagar', name: 'T. Nagar', lat: 13.0418, lon: 80.2341 },
@@ -111,9 +104,15 @@ export const DISTRICTS = [
     id: 'coimbatore',
     name: 'Coimbatore',
     shortName: 'Coimbatore',
+    kind: 'City',
     lat: 11.0168,
     lon: 76.9558,
     population: 1061447,
+    populationYear: 2011,
+    densityLabel: 'High-density city',
+    context:
+      'A large western industrial city in the Noyyal basin, sheltered somewhat by the Western Ghats but with dense manufacturing and textile workforces exposed to indoor heat.',
+    usesFortyGuard: false,
     subKind: 'Taluk HQ',
     towns: [
       { id: 'mettupalayam', name: 'Mettupalayam', lat: 11.2996, lon: 76.9364 },
@@ -125,6 +124,15 @@ export const DISTRICTS = [
     ],
   },
 ];
+
+/**
+ * The tracked zones — one per district headquarters. This is what the stats
+ * bar, comparison panel, trend chart, and alert feed iterate over.
+ */
+export const ZONES = DISTRICTS.map(({ towns, subKind, ...d }) => ({
+  ...d,
+  polygon: buildPolygonAOI(d.lat, d.lon),
+}));
 
 /**
  * Every mappable point (district HQs + sub-towns) as one flat list. This is
@@ -155,15 +163,8 @@ export const HEAT_POINTS = DISTRICTS.flatMap((d) => [
   })),
 ]);
 
-/**
- * Sub-towns only, kept for the lightweight "explore nearby" lookup panel.
- */
-export const SECONDARY_TOWNS = HEAT_POINTS.filter((p) => p.kind === 'town').map((p) => ({
-  ...p,
-  nearZoneId: p.districtId,
-}));
-
-export const POPULATION_RATIO = (
-  ZONES.find((z) => z.id === 'trichy').population /
-  ZONES.find((z) => z.id === 'tirupattur').population
-).toFixed(1);
+/** Most-exposed vs least-exposed district — the headline population contrast. */
+const sortedByPopulation = [...ZONES].sort((a, b) => b.population - a.population);
+export const MOST_EXPOSED = sortedByPopulation[0];
+export const LEAST_EXPOSED = sortedByPopulation[sortedByPopulation.length - 1];
+export const POPULATION_RATIO = (MOST_EXPOSED.population / LEAST_EXPOSED.population).toFixed(1);

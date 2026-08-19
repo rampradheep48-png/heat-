@@ -18,8 +18,8 @@ export default function Header({ lastUpdated, onRefreshAll, refreshing }) {
               Heat Risk Command Center
             </h1>
             <p className="mt-1 max-w-xl text-sm text-ink-muted">
-              Tiruchirappalli vs. Tirupattur — same interior Tamil Nadu heatwave, ten times the
-              exposed population.
+              Chennai, Coimbatore, Tiruchirappalli, Vellore and Tirupattur — five Tamil Nadu
+              districts and their taluk towns, ranked by exposed population, not just temperature.
             </p>
           </div>
 

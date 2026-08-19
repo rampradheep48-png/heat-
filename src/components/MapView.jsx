@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMap } from 'react-leaflet';
 import { RISK_BANDS } from '../services/riskModel.js';
 import { DISTRICTS } from '../data/zones.js';
@@ -23,32 +23,9 @@ function MapController({ target }) {
   return null;
 }
 
-export default function MapView({ zoneStates, network }) {
+export default function MapView({ points, loading }) {
   const [target, setTarget] = useState(null);
   const [nonce, setNonce] = useState(0);
-
-  // The two core zones are read via FortyGuard (with an Open-Meteo fallback),
-  // so prefer their richer reading over the bulk map fetch for those points.
-  const coreByPointId = useMemo(() => {
-    const map = {};
-    for (const s of zoneStates) {
-      if (s.tempNow !== null && s.tempNow !== undefined) {
-        map[s.zone.id] = { tempNow: s.tempNow, risk: s.risk, source: s.source };
-      }
-    }
-    return map;
-  }, [zoneStates]);
-
-  const points = useMemo(
-    () =>
-      (network?.points ?? []).map((p) => {
-        const core = coreByPointId[p.id];
-        return core
-          ? { ...p, tempNow: core.tempNow, risk: core.risk, source: core.source }
-          : { ...p, source: 'open-meteo' };
-      }),
-    [network, coreByPointId]
-  );
 
   function focus(lat, lon, zoom) {
     setNonce((n) => n + 1);
@@ -75,7 +52,7 @@ export default function MapView({ zoneStates, network }) {
 
         <MapController target={target} />
 
-        {points.map((p) => {
+        {(points ?? []).map((p) => {
           const isDistrict = p.kind === 'district';
           return (
             <CircleMarker
@@ -169,7 +146,7 @@ export default function MapView({ zoneStates, network }) {
         </div>
       </div>
 
-      {network?.loading && (
+      {loading && (
         <div className="pointer-events-none absolute bottom-14 right-3 z-[1000] rounded-md border border-void-line bg-void/85 px-2 py-1 font-mono text-[10px] uppercase tracking-wide text-ink-faint backdrop-blur">
           Loading readings…
         </div>

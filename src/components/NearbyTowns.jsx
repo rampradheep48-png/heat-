@@ -7,14 +7,14 @@ import { formatTemp } from '../utils/format.js';
  * same risk bands the map uses. Reads straight from the shared network fetch,
  * so no extra requests are made here.
  */
-export default function NearbyTowns({ network }) {
+export default function NearbyTowns({ points, loading, error }) {
   const byDistrict = useMemo(() => {
     const groups = {};
-    for (const p of network?.points ?? []) {
+    for (const p of points ?? []) {
       (groups[p.districtId] ??= []).push(p);
     }
     return groups;
-  }, [network]);
+  }, [points]);
 
   return (
     <div className="rounded-2xl border border-void-line bg-void-panel p-5 shadow-panel">
@@ -24,8 +24,8 @@ export default function NearbyTowns({ network }) {
       <p className="mb-4 text-xs text-ink-faint">
         Live temperature for every district headquarters and its taluk towns (Open-Meteo, no
         credits used). Colour matches the map&rsquo;s risk bands.
-        {network?.loading && <span className="ml-1 text-ink-faint">Refreshing…</span>}
-        {network?.error && <span className="ml-1 text-risk-extreme">{network.error}</span>}
+        {loading && <span className="ml-1 text-ink-faint">Refreshing…</span>}
+        {error && <span className="ml-1 text-risk-extreme">{error}</span>}
       </p>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
