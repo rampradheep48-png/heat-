@@ -57,3 +57,54 @@ export async function fetchOpenMeteo({ lat, lon }) {
     source: 'open-meteo',
   };
 }
+
+// Open-Meteo accepts comma-separated coordinate lists and answers with one
+// result object per location. Chunked so a single failing batch can't take the
+// whole map down.
+const BULK_CHUNK_SIZE = 20;
+
+/**
+ * Fetches the current temperature for many points in as few requests as
+ * possible. Used by the district/sub-town map layer.
+ *
+ * @param {{id: string, lat: number, lon: number}[]} points
+ * @returns {Promise<Record<string, {tempNow: number|null, feelsLike: number|null, humidity: number|null}>>}
+ *   keyed by point id; missing/failed points simply don't appear.
+ */
+export async function fetchOpenMeteoBulk(points) {
+  const chunks = [];
+  for (let i = 0; i < points.length; i += BULK_CHUNK_SIZE) {
+    chunks.push(points.slice(i, i + BULK_CHUNK_SIZE));
+  }
+
+  const results = await Promise.all(
+    chunks.map((chunk) => fetchChunk(chunk).catch(() => []))
+  );
+
+  return Object.fromEntries(results.flat());
+}
+
+async function fetchChunk(chunk) {
+  const params = new URLSearchParams({
+    latitude: chunk.map((p) => p.lat).join(','),
+    longitude: chunk.map((p) => p.lon).join(','),
+    current: 'temperature_2m,apparent_temperature,relative_humidity_2m',
+    timezone: 'auto',
+  });
+
+  const res = await fetch(`${BASE_URL}?${params.toString()}`);
+  if (!res.ok) throw new Error(`Open-Meteo bulk request failed (${res.status})`);
+
+  const json = await res.json();
+  // A single-location request returns an object, not an array.
+  const entries = Array.isArray(json) ? json : [json];
+
+  return chunk.map((point, i) => [
+    point.id,
+    {
+      tempNow: entries[i]?.current?.temperature_2m ?? null,
+      feelsLike: entries[i]?.current?.apparent_temperature ?? null,
+      humidity: entries[i]?.current?.relative_humidity_2m ?? null,
+    },
+  ]);
+}

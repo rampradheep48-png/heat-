@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { ZONES } from './data/zones.js';
 import { useZoneData } from './hooks/useZoneData.js';
+import { useHeatNetwork } from './hooks/useHeatNetwork.js';
 import Header from './components/Header.jsx';
 import StatsBar from './components/StatsBar.jsx';
 import ComparisonPanel from './components/ComparisonPanel.jsx';
@@ -15,6 +16,9 @@ export default function App() {
   // hook a static number of times keeps this within the rules of hooks.
   const trichy = useZoneData(ZONES[0]);
   const tirupattur = useZoneData(ZONES[1]);
+
+  // Every district HQ + sub-town, for the map layer (bulk Open-Meteo, no credits).
+  const network = useHeatNetwork();
 
   const zoneStates = useMemo(
     () => [
@@ -32,6 +36,7 @@ export default function App() {
   function refreshAll() {
     trichy.refresh();
     tirupattur.refresh();
+    network.refresh();
   }
 
   return (
@@ -45,7 +50,7 @@ export default function App() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <MapView zoneStates={zoneStates} />
+            <MapView zoneStates={zoneStates} network={network} />
           </div>
           <div className="lg:col-span-2">
             <TrendChart zoneStates={zoneStates} />
@@ -54,7 +59,7 @@ export default function App() {
 
         <AlertFeed zoneStates={zoneStates} />
 
-        <NearbyTowns />
+        <NearbyTowns network={network} />
       </main>
 
       <Footer />

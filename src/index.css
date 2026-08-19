@@ -65,6 +65,15 @@ body {
 .leaflet-popup-tip {
   background: #111a15 !important;
 }
+.leaflet-tooltip {
+  background: #111a15 !important;
+  color: #e9efea !important;
+  border: 1px solid #233028 !important;
+  box-shadow: none !important;
+}
+.leaflet-tooltip-top::before {
+  border-top-color: #233028 !important;
+}
 .leaflet-tile-pane {
   filter: saturate(0.55) brightness(0.65) contrast(1.05);
 }
